@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <chrono>
 #include <random>
 
 #define TimeLapse(code, time)                             \
@@ -12,37 +13,60 @@
         time = (float)(end_t - begin_t) / CLOCKS_PER_SEC; \
     }
 
+static const std::initializer_list<std::uint64_t> kElems = { 20, 10, 4, 5, 16, 30, 24, 50 };
+
+template<typename T>
+void testSearchInsert()
+{
+    std::unique_ptr<T> bst(new T{ kElems });
+    for (auto elem : kElems) {
+        EXPECT_TRUE(bst->search(elem));
+    }
+
+    bst->print();
+}
+
 TEST(BST, SearchInsert)
 {
-    std::initializer_list<std::uint64_t> elems = { 20, 10, 4, 5, 16, 30, 24, 50 };
+    testSearchInsert<BST<std::uint64_t>>();
+}
 
-    BST<std::uint64_t> bst(elems);
+TEST(AVL, SearchInsert)
+{
+    testSearchInsert<AVL<std::uint64_t>>();
+}
 
-    for (auto elem : elems) {
-        EXPECT_TRUE(bst.search(elem));
+template<typename T>
+void testRemove()
+{
+    std::unique_ptr<T> bst(new T{ kElems });
+    bst->print();
+    for (auto elem : kElems) {
+        bst->remove(elem);
+        std::cerr << "after remove: " << elem << std::endl;
+        bst->print();
     }
 }
 
 TEST(BST, Remove)
 {
-    std::initializer_list<std::uint64_t> elems = { 20, 10, 4, 5, 16, 30, 24, 50 };
-    BST<std::uint64_t> bst(elems);
-
-    for (auto elem : elems) {
-        bst.remove(elem);
-        std::cerr << "after remove: " << elem << std::endl;
-        bst.print();
-    }
+    testRemove<BST<std::uint64_t>>();
 }
 
-using NumberType = std::uint32_t;
+TEST(AVL, Remove)
+{
+    testRemove<AVL<std::uint64_t>>();
+}
 
-static const NumberType kNumberCount = 50000;
+using NumberType = std::uint16_t;
+
+static const NumberType kNumberCount = 54000;
 
 TEST(BST, CompareTwoTrees)
 {
     BST<NumberType> sequenceTree, randomTree;
-    double timeSpent;
+
+    double timeSpent = 0;
     TimeLapse(
         {
             for (NumberType i = 0; i < kNumberCount; ++i) {

@@ -9,26 +9,23 @@ struct BST
 {
     BST *l, *r;
     std::vector<T> elems;
-    int height;
 
     BST()
         : l(nullptr)
         , r(nullptr)
-        , height(0)
     {
     }
 
     BST(std::initializer_list<T> init)
         : l(nullptr)
         , r(nullptr)
-        , height(0)
     {
         for (const auto& elem : init) {
             insert(elem);
         }
     }
 
-    ~BST()
+    virtual ~BST()
     {
         //        std::cerr << "~BST: " << std::endl;
         delete l;
@@ -47,11 +44,46 @@ struct BST
         NodeParentConst current{ this, nullptr };
         return findVal(elem, current);
     }
-    void print() const { walk(this, printElems); }
+    void print() const { printImpl(); }
+
+protected:
+    virtual void printImpl() const { walk(this, printElems); }
+    virtual BST* create() { return new BST<T>; }
+    virtual void setR(BST* node) { r = node; }
+    virtual void setL(BST* node) { l = node; }
+    void walk(const BST* node, std::function<void(const BST*)> func) const
+    {
+        if (!node) {
+            return;
+        }
+        walk(node->l, func);
+        func(node);
+        walk(node->r, func);
+    }
+    virtual void nodeChanged(BST* node) {}
 
 private:
     using NodeParentConst = std::pair<const BST*, const BST*>;
     using NodeParent = std::pair<BST*, BST*>;
+
+    BST* insertImpl(BST* current, const T& elem)
+    {
+        if (!current) {
+            current = create();
+        }
+
+        if (current->elems.empty() || current->elems[0] == elem) {
+            current->elems.push_back(elem);
+        }
+        else if (current->elems[0] < elem) {
+            current->setR(insertImpl(current->r, elem));
+        }
+        else {
+            current->setL(insertImpl(current->l, elem));
+        }
+
+        return current;
+    }
 
     void removeImpl(NodeParent& removeNode, const T& elem)
     {
@@ -108,6 +140,7 @@ private:
             }
             forRemove->l = forRemove->r = nullptr;
             delete forRemove;
+            nodeChanged(node);
             return;
         }
         if (node->l) {
@@ -117,6 +150,7 @@ private:
             assignNodeChild(node, parent, node->r);
         }
         node->l = node->r = nullptr;
+        nodeChanged(parent);
         delete node;
     }
 
@@ -124,9 +158,11 @@ private:
     {
         if (this == node) {
             elems.pop_back();
+            nodeChanged(node);
             return;
         }
         assignNodeChild(node, parent, nullptr);
+        nodeChanged(parent);
         delete node;
     }
 
@@ -179,33 +215,24 @@ private:
         return res;
     }
 
-    BST* insertImpl(BST* current, const T& elem)
+    void insertImpl2(const T& elem)
     {
-        if (!current) {
-            current = new BST<T>;
+        BST* current = this;
+        while (!current->elems.empty() && current->elems[0] != elem) {
+            if (current->elems[0] < elem) {
+                if (!current->r) {
+                    current->r = new BST<T>;
+                }
+                current = current->r;
+            }
+            else {
+                if (!current->l) {
+                    current->l = new BST<T>;
+                }
+                current = current->l;
+            }
         }
-
-        if (current->elems.empty() || current->elems[0] == elem) {
-            current->elems.push_back(elem);
-        }
-        else if (current->elems[0] < elem) {
-            current->r = insertImpl(current->r, elem);
-        }
-        else {
-            current->l = insertImpl(current->l, elem);
-        }
-
-        return current;
-    }
-
-    void walk(const BST* node, std::function<void(const BST*)> func) const
-    {
-        if (!node) {
-            return;
-        }
-        walk(node->l, func);
-        func(node);
-        walk(node->r, func);
+        current->elems.push_back(elem);
     }
 
     static void printElems(const BST* node)
@@ -215,4 +242,87 @@ private:
         }
         std::cerr << std::endl;
     }
+};
+
+template<typename T>
+struct AVL : public BST<T>
+{
+    size_t height;
+    AVL* parentNode;
+
+    AVL()
+        : BST<T>()
+        , height(1)
+        , parentNode(nullptr)
+    {
+    }
+
+    AVL(std::initializer_list<T> init)
+        : BST<T>()
+        , height(1)
+        , parentNode(nullptr)
+    {
+        for (const auto& elem : init) {
+            BST<T>::insert(elem);
+        }
+    }
+
+protected:
+    BST<T>* create() override { return new AVL<T>; }
+    void setR(BST<T>* node) override
+    {
+        BST<T>::r = node;
+        getAVL(node)->parentNode = getAVL(BST<T>::r);
+        height = calcHeight(this);
+    }
+    void setL(BST<T>* node) override
+    {
+        BST<T>::l = node;
+        getAVL(node)->parentNode = getAVL(BST<T>::l);
+        height = calcHeight(this);
+    }
+    void printImpl() const override { BST<T>::walk(this, printElems); }
+
+    void nodeChanged(BST<T>* node) override
+    {
+        if (!node) {
+            return;
+        }
+        auto avlNode = getAVL(node);
+        auto newHeight = calcHeight(avlNode);
+        if (newHeight != avlNode->height) {
+            avlNode->height = newHeight;
+            nodeChanged(avlNode->parentNode);
+        }
+    }
+
+private:
+    size_t calcHeight(AVL<T>* current)
+    {
+        auto newHeight = 0;
+        if (!current) {
+            return newHeight;
+        }
+        for (auto ch : { current->r, current->l }) {
+            auto child = getAVL(ch);
+            if (child && child->height > newHeight) {
+                newHeight = child->height;
+            }
+        }
+        if (!newHeight && !current->elems.empty()) {
+            return 1;
+        }
+        return newHeight > 0 ? newHeight + 1 : newHeight;
+    }
+
+    static void printElems(const BST<T>* node)
+    {
+        for (const auto& elem : node->elems) {
+            std::cerr << elem << " ";
+        }
+        std::cerr << "height: " << getAVL(node)->height << std::endl;
+    }
+
+    static AVL* getAVL(BST<T>* node) { return static_cast<AVL<T>*>(node); }
+    static const AVL* getAVL(const BST<T>* node) { return static_cast<const AVL<T>*>(node); }
 };
