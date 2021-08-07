@@ -46,11 +46,6 @@ struct BST
     }
     void print() const { printImpl(); }
 
-protected:
-    virtual void printImpl() const { walk(this, printElems); }
-    virtual BST* create() { return new BST<T>; }
-    virtual void setR(BST* node) { r = node; }
-    virtual void setL(BST* node) { l = node; }
     void walk(const BST* node, std::function<void(const BST*)> func) const
     {
         if (!node) {
@@ -60,6 +55,12 @@ protected:
         func(node);
         walk(node->r, func);
     }
+
+protected:
+    virtual void printImpl() const { walk(this, printElems); }
+    virtual BST* create() { return new BST<T>; }
+    virtual void setR(BST* node) { r = node; }
+    virtual void setL(BST* node) { l = node; }
     virtual void nodeChanged(BST* node) {}
 
 private:
