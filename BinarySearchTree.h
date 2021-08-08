@@ -197,11 +197,11 @@ private:
                 return true;
             }
             nodeParent.second = node;
-            if (node->elems[0] > val) {
-                nodeParent.first = node->l;
+            if (node->elems[0] < val) {
+                nodeParent.first = node->r;
             }
             else {
-                nodeParent.first = node->r;
+                nodeParent.first = node->l;
             }
             return findVal(val, nodeParent);
         }

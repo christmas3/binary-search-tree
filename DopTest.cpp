@@ -3,37 +3,45 @@
 
 #include "Dop.h"
 
-static const std::uint16_t kElemsSize = 10;
+#define TimeLapse(code, time)                             \
+    {                                                     \
+        auto begin_t = std::clock();                      \
+        code;                                             \
+        auto end_t = std::clock();                        \
+        time = (float)(end_t - begin_t) / CLOCKS_PER_SEC; \
+    }
+
+static const NumbersType kElemsSize = 10000000;
 static const std::string delim(80, '=');
 
 static void printElems(const std::vector<dop::Node>& nodes)
 {
     std::cerr << delim << std::endl;
 
-    for (std::uint16_t i = 0; i < kElemsSize; ++i) {
+    for (NumbersType i = 0; i < kElemsSize; ++i) {
         std::cerr << nodes[i] << std::endl;
     }
 }
 
-static void generateNodes(std::vector<dop::Node>& nodes, std::uint16_t size)
+static std::random_device rd;
+static std::mt19937 g(rd());
+
+static void generateNodes(std::vector<dop::Node>& nodes, NumbersType size)
 {
     nodes.reserve(size);
-    for (std::uint16_t i = 0; i < size; ++i) {
+    for (NumbersType i = 0; i < size; ++i) {
         nodes.push_back({ i, 1 });
     }
 
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::uniform_int_distribution<std::uint16_t> uni(0, kElemsSize - 1);
+    std::uniform_int_distribution<NumbersType> uni(0, kElemsSize - 1);
 
-    for (std::uint16_t i = 0, searchCount = kElemsSize * 2; i < searchCount; ++i) {
+    for (NumbersType i = 0, searchCount = kElemsSize; i < searchCount; ++i) {
         auto number = uni(g);
-        std::cerr << "number: " << number << std::endl;
         auto iter = std::lower_bound(nodes.begin(), nodes.end(), dop::Node{ number, 0 });
         iter->weight += 1;
     }
 
-    //    std::shuffle(nodes.begin(), nodes.end(), g);
+    std::shuffle(nodes.begin(), nodes.end(), g);
 }
 
 TEST(Dop, Algo1)
@@ -42,16 +50,33 @@ TEST(Dop, Algo1)
 
     generateNodes(elems, kElemsSize);
 
-    printElems(elems);
+    //    printElems(elems);
 
     dop::DopBst dopTree;
-    dop::createDop1(&dopTree, &elems[0], elems.size());
 
-    printElems(elems);
+    double timeSpent = 0;
+    TimeLapse({ dop::createDop1(&dopTree, &elems[0], elems.size()); }, timeSpent);
 
-    std::cerr << delim << std::endl;
-    dopTree.print();
+    std::cerr << "Fill dop1 tree: " << timeSpent << std::endl;
     std::cerr << "avgDepth: " << dopTree.calcAvgDepth() << std::endl;
+
+    std::shuffle(elems.begin(), elems.end(), g);
+
+    NumbersType tenthPart = kElemsSize / 10;
+
+    TimeLapse(
+        {
+            for (NumbersType i = 0; i < tenthPart; ++i) {
+                EXPECT_TRUE(dopTree.search(elems[i]));
+            }
+        },
+        timeSpent);
+    std::cerr << "Search dop1 tree: " << timeSpent << std::endl;
+
+    //    printElems(elems);
+
+    //    std::cerr << delim << std::endl;
+    //    dopTree.print();
 }
 
 TEST(Dop, Algo2)
@@ -60,14 +85,29 @@ TEST(Dop, Algo2)
 
     generateNodes(elems, kElemsSize);
 
-    printElems(elems);
+    //    printElems(elems);
 
     dop::DopBst dopTree;
-    dop::createDop2(&dopTree, &elems[0], elems.size());
+    double timeSpent = 0;
+    TimeLapse({ dop::createDop2(&dopTree, &elems[0], elems.size()); }, timeSpent);
 
-    printElems(elems);
-
-    std::cerr << delim << std::endl;
-    dopTree.print();
+    std::cerr << "Fill dop2 tree: " << timeSpent << std::endl;
     std::cerr << "avgDepth: " << dopTree.calcAvgDepth() << std::endl;
+
+    std::shuffle(elems.begin(), elems.end(), g);
+
+    NumbersType tenthPart = kElemsSize / 10;
+
+    TimeLapse(
+        {
+            for (NumbersType i = 0; i < tenthPart; ++i) {
+                EXPECT_TRUE(dopTree.search(elems[i]));
+            }
+        },
+        timeSpent);
+    std::cerr << "Search dop2 tree: " << timeSpent << std::endl;
+
+    //    printElems(elems);
+    //    std::cerr << delim << std::endl;
+    //    dopTree.print();
 }

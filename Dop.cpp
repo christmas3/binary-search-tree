@@ -19,18 +19,18 @@ static int findRoot(Node* elems, int left, int right)
     if (left >= right) {
         return left;
     }
-    std::uint64_t treeWeightHalf = std::accumulate(elems + left,
-                                                   elems + right + 1,
-                                                   0,
-                                                   [](auto& cur, const auto& val) { return cur += val.weight; }) /
-                                   2;
-    std::cerr << "treeWeightHalf: " << treeWeightHalf << std::endl;
-    std::uint64_t currentWeight = 0;
+    NumbersType treeWeightHalf = std::accumulate(elems + left,
+                                                 elems + right + 1,
+                                                 0,
+                                                 [](auto& cur, const auto& val) { return cur += val.weight; }) /
+                                 2;
+    //    std::cerr << "treeWeightHalf: " << treeWeightHalf << std::endl;
+    NumbersType currentWeight = 0;
     int i = left;
     while (currentWeight < treeWeightHalf && i <= right) {
-        std::cerr << "i: " << i << std::endl;
+        //        std::cerr << "i: " << i << std::endl;
         currentWeight += elems[i++].weight;
-        std::cerr << "currentWeight: " << currentWeight << std::endl;
+        //        std::cerr << "currentWeight: " << currentWeight << std::endl;
     }
 
     assert(i - 1 <= right);
@@ -43,7 +43,7 @@ static void createDop2Impl(DopBst* tree, Node* elems, int left, int right)
         return;
     }
     auto root = findRoot(elems, left, right);
-    std::cerr << "root: " << root << std::endl;
+    //    std::cerr << "root: " << root << std::endl;
     tree->insert(elems[root]);
     createDop2Impl(tree, elems, left, root - 1);
     createDop2Impl(tree, elems, root + 1, right);

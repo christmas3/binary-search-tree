@@ -2,12 +2,14 @@
 
 #include "BinarySearchTree.h"
 
+using NumbersType = std::uint32_t;
+
 namespace dop {
 
 struct Node
 {
-    std::uint32_t key;
-    std::uint32_t weight;
+    NumbersType key;
+    NumbersType weight;
 };
 
 inline bool operator<(const Node& lho, const Node& rho)
@@ -28,7 +30,7 @@ inline std::ostream& operator<<(std::ostream& out, const Node& val)
 struct DopBst : public BST<Node>
 {
     DopBst* parent;
-    std::uint32_t depth;
+    NumbersType depth;
 
     DopBst()
         : parent(nullptr)
@@ -38,8 +40,8 @@ struct DopBst : public BST<Node>
 
     [[nodiscard]] double calcAvgDepth() const
     {
-        std::uint32_t avgDepth = 0;
-        std::uint32_t treeWeight = 0;
+        NumbersType avgDepth = 0;
+        NumbersType treeWeight = 0;
         walk(this, [&avgDepth, &treeWeight](const BST<Node>* node) mutable {
             auto dopNode = toDopBst(node);
             treeWeight += dopNode->elems[0].weight;
