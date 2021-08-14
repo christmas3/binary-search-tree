@@ -5,9 +5,11 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag testing:$(date +%s)
+    - name: Build the testing image
+      run: docker build . --file Dockerfile --tag testing
+    - name: Run tests
+      run: docker run --rm -t testing ./binary-search-tree
